@@ -1,46 +1,58 @@
-#include "shell.h"
+#include "main.h"
 
 /**
- * main - entry point
- * @ac: arg count
- * @av: arg vector
- *
- * Return: 0 on success, 1 on error
+ * main - The main function serves as the entry point for the Simple Shell program.
+ * @argc: The number of command-line arguments passed to the program.
+ * @argv: An array of strings containing the command-line arguments.
+ * Return: Returns 0 upon successful execution, otherwise returns 1.
  */
-int main(int ac, char **av)
+
+int main(int argc, char *argv[])
 {
-	info_t info[] = { INFO_INIT };
-	int fd = 2;
+    char *line; // Stores the user input line
+    int Status; // Stores the status of the shell
+    char **tokens; // Array of tokens obtained from the user input
 
-	asm ("mov %1, %0\n\t"
-			"add $3, %0"
-			: "=r" (fd)
-			: "r" (fd));
+    (void)argc; // Suppress unused parameter warning
 
-	if (ac == 2)
-	{
-		fd = open(av[1], O_RDONLY);
-		if (fd == -1)
-		{
-			if (errno == EACCES)
-				exit(126);
-			if (errno == ENOENT)
-			{
-				_eputs(av[0]);
-				_eputs(": 0: Can't open ");
-				_eputs(av[1]);
-				_eputchar('\n');
-				_eputchar(BUF_FLUSH);
-				exit(127);
-			}
-			return (EXIT_FAILURE);
-		}
-		info->readfd = fd;
-	}
-	populate_env_list(info);
-	read_history(info);
-	hsh(info, av);
-	return (EXIT_SUCCESS);
+    signal(SIGINT, ctrlc); // Set up signal handler for Ctrl+C
+    Status = 0; // Initialize the shell status
+
+    while (Status == 0)
+    {
+        prompt(); // Display the shell prompt
+
+        line = read_line(); // Read a line of input from the user
+
+        if (_strcmp(line, "\n") == 0)
+        {
+            tokens = NULL; // Empty line entered, reset tokens
+            free(line); // Free the line buffer
+            continue; // Continue to the next iteration of the loop
+        }
+
+        tokens = _strtotokens(line); // Tokenize the input line
+
+        if (tokens[0] == NULL)
+        {
+            free(tokens); // No tokens found, free tokens
+            free(line); // Free the line buffer
+            continue; // Continue to the next iteration of the loop
+        }
+
+        if (_strcmp(tokens[0], "exit") == 0)
+        {
+            _exitSimpleShell(tokens, line); // Handle the "exit" command
+        }
+        else
+        {
+            Status = _execute(tokens, argv[0]); // Execute the command
+        }
+
+        free(line); // Free the line buffer
+        free(tokens); // Free the tokens array
+    }
+
+    return (Status); // Return the final shell status
 }
-
 
