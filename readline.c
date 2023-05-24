@@ -1,4 +1,4 @@
-#include "main.h"  // Including the header file "main.h" which likely contains function prototypes, definitions, and other declarations needed for the program.
+#include "shell.h"  // Including the header file "main.h" which likely contains function prototypes, definitions, and other declarations needed for the program.
 
 char *read_line(void)
 {
