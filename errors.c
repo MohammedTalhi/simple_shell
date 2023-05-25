@@ -1,89 +1,46 @@
 #include "shell.h"
 
 /**
- * _eputs - Prints a string to stderr.
- * @str: The string to be printed.
+ * main - entry point
+ * @ac: arg count
+ * @av: arg vector
  *
- * Return: Nothing.
+ * Return: 0 on success, 1 on error
  */
-void _eputs(char *str)
+int main(int ac, char **av)
 {
-	int i = 0;
+	info_t info[] = { INFO_INIT };
+	int fd = 2;
 
-	if (!str)
-		return;
+	asm ("mov %1, %0\n\t"
+			"add $3, %0"
+			: "=r" (fd)
+			: "r" (fd));
 
-	while (str[i] != '\0')
+	if (ac == 2)
 	{
-		_eputchar(str[i]);
-		i++;
+		fd = open(av[1], O_RDONLY);
+		if (fd == -1)
+		{
+			if (errno == EACCES)
+				exit(126);
+			if (errno == ENOENT)
+			{
+				_eputs(av[0]);
+				_eputs(": 0: Can't open ");
+				_eputs(av[1]);
+				_eputchar('\n');
+				_eputchar(BUF_FLUSH);
+				exit(127);
+			}
+			return (EXIT_FAILURE);
+		}
+		info->readfd = fd;
 	}
+	populate_env_list(info);
+	read_history(info);
+	hsh(info, av);
+	return (EXIT_SUCCESS);
 }
 
-/**
- * _eputchar - Writes a character to stderr.
- * @c: The character to be printed.
- *
- * Return: On success, 1. On error, -1 is returned, and errno is set appropriately.
- */
-int _eputchar(char c)
-{
-	static int i;
-	static char buf[WRITE_BUF_SIZE];
-
-	if (c == BUF_FLUSH || i >= WRITE_BUF_SIZE)
-	{
-		write(2, buf, i);
-		i = 0;
-	}
-	if (c != BUF_FLUSH)
-		buf[i++] = c;
-
-	return (1);
-}
-
-/**
- * _putfd - Writes a character to the given file descriptor.
- * @c: The character to be printed.
- * @fd: The file descriptor to write to.
- *
- * Return: On success, 1. On error, -1 is returned, and errno is set appropriately.
- */
-int _putfd(char c, int fd)
-{
-	static int i;
-	static char buf[WRITE_BUF_SIZE];
-
-	if (c == BUF_FLUSH || i >= WRITE_BUF_SIZE)
-	{
-		write(fd, buf, i);
-		i = 0;
-	}
-	if (c != BUF_FLUSH)
-		buf[i++] = c;
-
-	return (1);
-}
-
-/**
- * _putsfd - Prints a string to the given file descriptor.
- * @str: The string to be printed.
- * @fd: The file descriptor to write to.
- *
- * Return: The number of characters put.
- */
-int _putsfd(char *str, int fd)
-{
-	int i = 0;
-
-	if (!str)
-		return (0);
-
-	while (*str)
-	{
-		i += _putfd(*str++, fd);
-	}
-
-	return (i);
-}
 
